@@ -8,6 +8,8 @@ class Maze(object):
     cell in such a way as to never pass through any cell twice.
     """
 
+    DIRECTIONS = ('E', 'S', 'W', 'N')
+
     def __init__(self, 
                  n_rows=10, 
                  n_cols=10, 
