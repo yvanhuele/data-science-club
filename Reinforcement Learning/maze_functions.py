@@ -15,7 +15,8 @@ class Maze(object):
                  n_cols=10, 
                  seed=None, 
                  start_cell=(0, 0),
-                 end_cell=None):
+                 end_cell=None,
+                 show_construction=False):
         """
         Create an instance of a Maze object.
         
@@ -30,7 +31,10 @@ class Maze(object):
                 indicating the end of the maze; if no value is given
                 the end will be the lower-right corner of
                 (n_rows - 1, n_cols - 1)
+            show_construction (bool): whether or not to display the
+                construction of the maze
         """
+        # TODO: replace show_construction parameter with a method
         self.n_rows = n_rows
         self.n_cols = n_cols
         self.shape = (n_rows, n_cols)
@@ -69,12 +73,31 @@ class Maze(object):
         # Initialize list of walls contained in the built maze
         self.maze_walls = []
 
+        if show_construction:
+            old_walls = self.maze_walls
+            self.maze_walls = potential_walls
+            print('Starting with all possible walls, each maze cell is its own',
+                  ' connected component.')
+            print('\nUnion-Find Array:\n{}'.format(maze_tree))
+            plt.figure(figsize=[0.6*n_cols, 0.6*n_rows])
+            self.plot()
+            for i in range(n_cols):
+                for j in range(n_rows):
+                    plt.text(i, j, i + n_cols * j, fontsize=14,
+                             horizontalalignment='center',
+                             verticalalignment='center')
+            plt.show()
+            self.maze_walls = old_walls
+
         # Decide whether each wall should stay or be discarded
         while len(potential_walls) > 0:
             # Randomly select wall
             random_wall_index = np.random.randint(len(potential_walls))
             random_wall = potential_walls.pop(random_wall_index)
-            
+
+            if show_construction:
+                print('Next Wall: {}'.format(random_wall))
+
             # Determine the connected components of the cells on either
             # side of the wall
             component_0 = find_component(maze_tree, random_wall[0])
@@ -83,9 +106,34 @@ class Maze(object):
             # Remove walls separating different components and keep
             # the rest
             if component_0 == component_1:
+                message = ('Cells {} and {} are already connected -> keep wall!'
+                           .format(random_wall[0], random_wall[1]))
                 self.maze_walls.append(random_wall)
             else:
+                message = ('Cells {} and {} are not connected --> remove wall!'
+                           .format(random_wall[0], random_wall[1]))
                 maze_tree[component_1] = component_0
+
+            if show_construction:
+                print(message)
+                print('')
+
+                if component_0 != component_1:
+                    print('Updated Union-Find Array:\n{}'.format(maze_tree))
+
+                    old_walls = self.maze_walls
+                    self.maze_walls = potential_walls + old_walls
+
+                    plt.figure(figsize=[0.6*n_cols, 0.6*n_rows])
+                    self.plot()
+                    for i in range(n_cols):
+                        for j in range(n_rows):
+                            plt.text(i, j, i + n_cols * j, fontsize=14,
+                                     horizontalalignment='center',
+                                     verticalalignment='center')
+                    plt.show()
+
+                    self.maze_walls = old_walls
                 
     def shape(self):
         """
