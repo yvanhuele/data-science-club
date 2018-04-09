@@ -63,12 +63,7 @@ class Maze(object):
         maze_tree = [- 1 for _ in range(self.n_rows * self.n_cols)]
 
         # Construct list of (interior) walls
-        potential_walls = ([(j + self.n_cols*i, (j + 1) + self.n_cols*i) 
-                            for i in range(self.n_rows) 
-                            for j in range(self.n_cols - 1)]
-                           + [(j + self.n_cols*i, j + self.n_cols*(i + 1))
-                              for j in range(self.n_cols) 
-                              for i in range(self.n_rows - 1)])
+        potential_walls = self.get_possible_walls()
         
         # Initialize list of walls contained in the built maze
         self.maze_walls = []
@@ -135,6 +130,43 @@ class Maze(object):
 
                     self.maze_walls = old_walls
                 
+    def get_possible_walls(self):
+        """
+        Construct all possible (interior) walls for a maze of these
+        dimensions
+
+        Returns:
+            walls (list): list of integer pairs corresponding to all
+                possible walls in a maze of similar dimensions
+        """
+        walls = ([(j + self.n_cols*i, (j + 1) + self.n_cols*i)
+                  for i in range(self.n_rows)
+                  for j in range(self.n_cols - 1)]
+                 + [(j + self.n_cols*i, j + self.n_cols*(i + 1))
+                    for j in range(self.n_cols)
+                    for i in range(self.n_rows - 1)])
+        return walls
+
+    def get_wall_signature(self):
+        """
+        Constructs and returns an array of 0s and 1s representing the
+        absence or presence of particular walls in the maze, with 0
+        indicating a wall is missing. This array is a relatively
+        compact representation of the maze.
+
+        Returns:
+            signature (numpy.array): array representing the presence
+                or absence of walls in the maze
+        """
+        all_walls = self.get_possible_walls()
+
+        signature = np.zeros(len(all_walls))
+        for i in range(len(all_walls)):
+            if all_walls[i] in self.maze_walls:
+                signature[i] = 1
+
+        return signature
+
     def shape(self):
         """
         Returns the shape of the maze.
@@ -283,7 +315,7 @@ class Maze(object):
                 'S', 'W', or 'N'
             
         Returns:
-            is_legal (bool): whether or not 
+            is_legal (bool): whether or not the given move is legal
         """
         trial_cell = next_cell(cell, direction, self.n_cols) 
         potential_wall = (min(cell, trial_cell), max(cell, trial_cell))
@@ -293,6 +325,27 @@ class Maze(object):
         
         is_legal = (is_in_bounds and no_wall)
         return is_legal
+
+    def move_filter(self, cell):
+        """
+        Returns an array of 0s and 1s corresponding to whether or not
+        each of the moves E, S, W, or N is legal from the given cell.
+        In each case, 1 represents a legal move while 0 represents an
+        illegal move.
+
+        Args:
+            cell (int): current position in the maze
+
+        Returns:
+            legal_moves (numpy.array): array representing whether each
+                of the moves E, S, W, and N is legal
+        """
+        legal_moves = np.zeros(len(self.DIRECTIONS))
+        for i, direction in enumerate(self.DIRECTIONS):
+            if self.is_legal_move(cell, direction):
+                legal_moves[i] = 1
+
+        return legal_moves
 
 
 def find_component(array, index):
